@@ -17,7 +17,7 @@ void surroundings(state_t* s, grid_t grid);
 
 void step(state_t* s, grid_t grid);
 
-void parse_file(FILE* fp);
+int parse_file(const char const* file_name);
 
 extern grid_t make_grid(char* str, int rows, int cols);
 

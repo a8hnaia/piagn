@@ -28,7 +28,10 @@ void exec_function(struct elem_t_dynarr* stack, func_t func) {
 		for (int i = 0; i < 256; i++) {
 			DYNARR_FREE(state.piles[i]);
 		}
+		free(state.piles);
+		state.piles = NULL;
 	}
+
 }
 
 int grid_at(grid_t grid, int x, int y) {
@@ -97,8 +100,10 @@ grid_t make_grid(char* str, int rows, int cols) {
 	return grid;
 }
 
-void parse_file(FILE* fp) {
-	assert(fp);
+int parse_file(const char const* file_name) {
+	FILE* fp = fopen(file_name, "r");
+	if(!fp) return 0;
+
 	struct char_dynarr buffer = DYNARR_NEW(char, 32);
 	int rows = 1, cols = 0, cols_current = 0;
 	int only_main = 1;
@@ -123,4 +128,8 @@ void parse_file(FILE* fp) {
 			.y = 0
 		};
 	}
+
+	DYNARR_FREE(buffer);
+	fclose(fp);
+	return 1;
 }
