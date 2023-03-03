@@ -28,7 +28,10 @@ void exec_function(struct elem_t_dynarr* stack, func_t func) {
 		for (int i = 0; i < 256; i++) {
 			DYNARR_FREE(state.piles[i]);
 		}
+		free(state.piles);
+		state.piles = NULL;
 	}
+
 }
 
 int grid_at(grid_t grid, int x, int y) {

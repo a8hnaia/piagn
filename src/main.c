@@ -23,5 +23,6 @@ int main(int argc, char* argv[]) {
 	struct elem_t_dynarr stack = DYNARR_NEW(elem_t, 16);
 	DYNARR_ASSERT(stack);
 	exec_function(&stack, funcs[0]);
+	
 	DYNARR_FREE(stack);
 }
