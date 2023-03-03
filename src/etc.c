@@ -126,6 +126,7 @@ int parse_file(const char const* file_name) {
 		};
 	}
 
+	DYNARR_FREE(buffer);
 	fclose(fp);
 	return 1;
 }
