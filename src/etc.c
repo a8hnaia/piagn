@@ -97,8 +97,10 @@ grid_t make_grid(char* str, int rows, int cols) {
 	return grid;
 }
 
-void parse_file(FILE* fp) {
-	assert(fp);
+int parse_file(const char const* file_name) {
+	FILE* fp = fopen(file_name, "r");
+	if(!fp) return 0;
+
 	struct char_dynarr buffer = DYNARR_NEW(char, 32);
 	int rows = 1, cols = 0, cols_current = 0;
 	int only_main = 1;
@@ -123,4 +125,7 @@ void parse_file(FILE* fp) {
 			.y = 0
 		};
 	}
+
+	fclose(fp);
+	return 1;
 }
