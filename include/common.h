@@ -8,7 +8,7 @@
 #include <string.h>
 #include "dynarr.h"
 
-#define elem_t uint8_t
+typedef uint8_t elem_t;
 
 DYNARR_TYPE(elem_t);
 DYNARR_TYPE(char);

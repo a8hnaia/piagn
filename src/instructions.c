@@ -169,11 +169,11 @@ void op_flow(state_t* s, int vt) { // generalisation of - and |
 			case 1: case -1:
 				s->dir = (s->dir + s->surrounding) & 3;
 			break;
-			case 2:
+			case 2: {
 				elem_t a = STACK_POP(s->stack);
 				int b = (!a) * 2 - 1;
 				s->dir = (s->dir + b) & 3;
-			break;
+			}	break;
 		}
 	}
 }
