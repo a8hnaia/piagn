@@ -1,6 +1,6 @@
 #include "etc.h"
 
-func_t funcs[64];
+func_t funcs[64] = {0};
 
 // Execute a custom defined function
 void exec_function(struct elem_t_dynarr* stack, func_t func) {
@@ -8,7 +8,7 @@ void exec_function(struct elem_t_dynarr* stack, func_t func) {
 	state_t state = {
 		.stack = *stack,
 		.pile_i = 0,
-		.repeat = 1,
+		.repeat = -1,
 		.dir = func.dir,
 		.halt = 0,
 		.x = func.x,
@@ -81,6 +81,14 @@ void surroundings(state_t* s, grid_t grid) {
 	else s->surrounding = 0;
 }
 
+// Execute given operation whether built-in or function
+void exec_op(state_t* s, int op) {
+	if (('A' <= op && 'Z' >= op) ||
+		('a' <= op && 'z' >= op))
+		exec_function(&s->stack, funcs[op - 64]);
+	else (*ops[op])(s);
+}
+
 // Take one step through the program
 void step(state_t* s, grid_t grid) {
 	surroundings(s, grid);
@@ -89,16 +97,21 @@ void step(state_t* s, grid_t grid) {
 		s->halt = 1;
 		return;
 	}
-	if (('A' <= op && 'Z' >= op) ||
-		('a' <= op && 'z' >= op)) {
-		exec_function(&s->stack, funcs[op - 64]);
+	if (s->repeat == -1)
+		exec_op(s, op);
+	else {
+		for (int i = s->repeat; i > 0; i--) {
+			exec_op(s, op);
+		}
+		s->repeat = -1;
 	}
-	else (*ops[op])(s);
 	go_dir(s->dir, &s->x, &s->y);
 }
 
-// Make a cols*rows grid from newline seperated string
-grid_t make_grid(char* str, int rows, int cols) {
+// Error code for make_func
+int make_func_err = 0;
+// Make a function from arguments
+func_t make_func(char* str, int rows, int cols, int no_piles, int start_x, int start_y) {
 	// Initialise grid struct
 	grid_t grid = {
 		.ptr = malloc(sizeof(char) * rows * cols),
@@ -111,60 +124,147 @@ grid_t make_grid(char* str, int rows, int cols) {
 	// Iterate through the string
 	int i = 0;
 	for (int y = 0; y < rows; y++) {
-		for (int x = 0; x < cols; x++) {
+		for (int x = 0; x < cols + 1; x++) {
 			char a = str[i++];
 			if (a == '\n') break;
 			if (a == ' ') a = '\0';
 			grid.ptr[y * cols + x] = a;
 		}
 	}
-	return grid;
+
+	// Figure out the way to start
+	int dir;
+	if (start_x == -1 && start_y == -1) {
+		dir = RIGHT;
+		start_x = 0;
+		start_y = 0;
+	}
+	else {
+		dir = 5;
+		for (int i = 0; i < 4; i++) {
+			char c = check_dir(grid, i, start_x, start_y);
+			if (c == -1) c = 0;
+			if (c) {
+				if (dir == 5) dir = i;
+				else {
+					make_func_err = 3;
+					return (func_t){};
+				}
+			}
+		}
+		if (dir == 5) {
+			make_func_err = 4;
+			return (func_t){};
+		}
+	}
+
+	func_t func = (func_t){
+		.grid = grid,
+		.dir = dir,
+		.no_piles = no_piles,
+		.x = start_x,
+		.y = start_y
+	};
+	return func;
 }
 
 // Parse file with the given file
 int parse_file(const char const* file_name) {
 	// Open the file
 	FILE* fp = fopen(file_name, "r");
-	if(!fp) return 0;
+	if(!fp) return 1;
 
 	// Make a buffer for the entire file
 	struct char_dynarr buffer = DYNARR_NEW(char, 32);
 	// Row and column count for the grid
-	int rows = 1, cols = 0, cols_current = 0;
+	int rows = 0, cols = 0, cols_current = 0;
+	// The position the function will start from
+	int start_x = -1, start_y = -1;
+	// Which function currently being parsed
+	int func_id = 0;
+	/* 0: parsing main or not parsing a function
+	 * 1: start of line, might be the start of a function definition
+	 * 2: might be be about to parse function (to ignore spaces before opening brace)
+	 * 3: will parse function after newline (to ignore characters after opening brace)
+	 * 4: parsing a function
+	 */
+	int status = 1;
+	// Whether current function ever pushes to a pile
+	int no_piles = 1;
 	// Whether the file only has a main function (without braces)
 	int only_main = 1;
 
+	// Until file ends
 	while (!feof(fp)) {
 		char c = fgetc(fp);
-		cols_current++;
-		if (c == '\n') {
-			rows++;
-			if (cols_current > cols) {
-				cols = cols_current;
+		if (status == 1) {
+			if (('A' <= c && 'Z' >= c) ||
+				('a' <= c && 'z' >= c)) {
+				func_id = c - 64;
+				status = 2;
+				continue;
+			}
+			else if (c == '{') {
+				func_id = 0;
+				status = 3;
+				continue;
+			}
+			else status = 0;
+			// No continue, should fall back to 0
+		}
+		if (status == 2) {
+			if (c == '{') {
+				status = 3;
+				continue;
+			}
+			else if (c != ' ') status = 0;
+			// No continue, should fall back to 0
+		}
+		if (status == 3 && c == '\n') {
+			DYNARR_RESIZE(buffer, 32);
+			buffer.len = 0;
+			rows = 0;
+			cols = 0;
+			cols_current = 0;
+			start_x = -1;
+			start_y = -1;
+			no_piles = 1;
+			only_main = 0;
+			status = 4;
+			continue;
+		}
+		if ((status == 0 && only_main) || (status == 2 && only_main) || status == 4) {
+			if (cols_current == 0 && status == 4 && c == '}') {
+				funcs[func_id] = make_func(buffer.ptr, rows, cols, no_piles, start_x, start_y);
+				if (make_func_err) return make_func_err;
+				status = 0;
+				continue;
+			}
+			// Enable piles if we push to a pile
+			if (c == '.') no_piles = 0;
+			if (c == '@') {
+				if (start_x == -1 && start_y == -1) {
+					start_x = cols_current;
+					start_y = rows;
+				}
+				else return 2;
+			}
+			else DYNARR_PUSH(buffer, c);
+			if (c == '\n') {
+				rows++;
+				if (cols_current > cols) cols = cols_current;
 				cols_current = 0;
 			}
+			else cols_current++;
 		}
-		// Space is noop
-		if (c == ' ') {
-			DYNARR_PUSH(buffer, '\0');
-		}
-		else {
-			DYNARR_PUSH(buffer, c);
-		}
+		if (status == 0 && c == '\n') status = 1;
 	}
 	fclose(fp);
 
-	// Currently, only main-only files are supported
-	if (only_main) {
-		funcs[0] = (func_t){
-			.grid = make_grid(buffer.ptr, rows, cols),
-			.dir = RIGHT,
-			.no_piles = 0,
-			.x = 0,
-			.y = 0
-		};
-	}
+	if (only_main)
+		funcs[func_id] = make_func(buffer.ptr, rows + 1, cols, no_piles, start_x, start_y);
+	if (make_func_err) return make_func_err;
 
 	DYNARR_FREE(buffer);
-	return 1;
+	return 0;
 }
