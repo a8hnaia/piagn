@@ -1,5 +1,3 @@
 Project piagn
-.std="c11"
 .files = recursive("src/*.c")
-.incs = {"include"}
 .build()
