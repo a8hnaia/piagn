@@ -9,24 +9,20 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	int result = parse_file(argv[1]);
-	switch (result) {
-		case 1:
-			fprintf(stderr, "Error parsing file: %s\n", strerror(errno));
-			return 1;
-		break;
-		case 2:
-			fprintf(stderr, "Error parsing file: Multiple `@`s");
-			return 2;
-		break;
-		case 3:
-			fprintf(stderr, "Error parsing file: Multiple operations around `@`");
-			return 3;
-		break;
-		case 4:
-			fprintf(stderr, "Error parsing file: No operation around `@`");
-			return 4;
-		break;
+	int error = parse_file(argv[1]);
+	if(error) {
+		static const char* error_texts[] = {
+			"Errno",
+			"Multiple `@`s",
+			"Multiple operations around `@`",
+			"No operation around `@`",
+		};
+
+		const char* text = (error == 1) ? strerror(errno)
+										: error_texts[error];
+		fprintf(stderr, "Error parsing file: %s\n", text);
+
+		return error;
 	}
 	
 	struct elem_t_dynarr stack = DYNARR_NEW(elem_t, 16);
