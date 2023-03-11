@@ -188,7 +188,13 @@ int parse_file(const char const* file_name) {
 	 * 3: will parse function after newline (to ignore characters after opening brace)
 	 * 4: parsing a function
 	 */
-	int status = 1;
+	enum {
+		OUTSIDE_FUNC = 0,
+		START_OF_LINE,
+		POSSIBLE_FUNCTION,
+		BEGIN_PARSING_FUNCTION,
+		PARSING_FUNCTION,
+	} status = START_OF_LINE;
 	// Whether current function ever pushes to a pile
 	int no_piles = 1;
 	// Whether the file only has a main function (without braces)
@@ -197,30 +203,30 @@ int parse_file(const char const* file_name) {
 	// Until file ends
 	while (!feof(fp)) {
 		char c = fgetc(fp);
-		if (status == 1) {
+		if (status == START_OF_LINE) {
 			if (('A' <= c && 'Z' >= c) ||
 				('a' <= c && 'z' >= c)) {
 				func_id = c - 64;
-				status = 2;
+				status = POSSIBLE_FUNCTION;
 				continue;
 			}
 			else if (c == '{') {
 				func_id = 0;
-				status = 3;
+				status = BEGIN_PARSING_FUNCTION;
 				continue;
 			}
-			else status = 0;
+			else status = OUTSIDE_FUNC;
 			// No continue, should fall back to 0
 		}
-		if (status == 2) {
+		if (status == POSSIBLE_FUNCTION) {
 			if (c == '{') {
-				status = 3;
+				status = BEGIN_PARSING_FUNCTION;
 				continue;
 			}
-			else if (c != ' ') status = 0;
+			else if (c != ' ') status = OUTSIDE_FUNC;
 			// No continue, should fall back to 0
 		}
-		if (status == 3 && c == '\n') {
+		if (status == BEGIN_PARSING_FUNCTION && c == '\n') {
 			DYNARR_RESIZE(buffer, 32);
 			buffer.len = 0;
 			rows = 0;
@@ -230,14 +236,16 @@ int parse_file(const char const* file_name) {
 			start_y = -1;
 			no_piles = 1;
 			only_main = 0;
-			status = 4;
+			status = PARSING_FUNCTION;
 			continue;
 		}
-		if ((status == 0 && only_main) || (status == 2 && only_main) || status == 4) {
-			if (cols_current == 0 && status == 4 && c == '}') {
+		if ((status == OUTSIDE_FUNC && only_main) ||
+			(status == POSSIBLE_FUNCTION && only_main) ||
+			 status == PARSING_FUNCTION) {
+			if (cols_current == 0 && status == PARSING_FUNCTION && c == '}') {
 				funcs[func_id] = make_func(buffer.ptr, rows, cols, no_piles, start_x, start_y);
 				if (make_func_err) return make_func_err;
-				status = 0;
+				status = OUTSIDE_FUNC;
 				continue;
 			}
 			// Enable piles if we push to a pile
@@ -257,7 +265,7 @@ int parse_file(const char const* file_name) {
 			}
 			else cols_current++;
 		}
-		if (status == 0 && c == '\n') status = 1;
+		if (status == OUTSIDE_FUNC && c == '\n') status = START_OF_LINE;
 	}
 	fclose(fp);
 
