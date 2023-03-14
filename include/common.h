@@ -42,6 +42,4 @@ typedef struct {
 	int y;
 } func_t;
 
-typedef void (*opptr_t)(state_t*);
-
 #endif

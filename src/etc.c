@@ -86,7 +86,7 @@ void exec_op(state_t* s, int op) {
 	if (('A' <= op && 'Z' >= op) ||
 		('a' <= op && 'z' >= op))
 		exec_function(&s->stack, funcs[op - 64]);
-	else (*ops[op])(s);
+	else exec_instruction(op, s);
 }
 
 // Take one step through the program
