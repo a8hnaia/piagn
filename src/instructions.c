@@ -23,44 +23,16 @@ void op_flow(state_t* s, int vt) { // generalisation of - and |
 int exec_instruction(char op, state_t* s) {
 	switch (op) {
 		case ' ': case '\0': break;
-		case '1':
-			DYNARR_PUSH(s->stack, 1);
+		case '0':
+			DYNARR_PUSH(s->stack, 0);
 			break;
 
-		case '2':
-			DYNARR_PUSH(s->stack, 2);
-			break;
-
-		case '3':
-			DYNARR_PUSH(s->stack, 4);
-			break;
-
-		case '4':
-			DYNARR_PUSH(s->stack, 8);
-			break;
-
-		case '5':
-			DYNARR_PUSH(s->stack, 16);
-			break;
-
-		case '6':
-			DYNARR_PUSH(s->stack, 32);
-			break;
-
-		case '7':
-			DYNARR_PUSH(s->stack, 64);
-			break;
-
-		case '8':
-			DYNARR_PUSH(s->stack, 128);
+		case '1' ... '8':
+			DYNARR_PUSH(s->stack, (1 << (op - 48)-1));
 			break;
 
 		case '9':
 			DYNARR_PUSH(s->stack, 255);
-			break;
-
-		case '0':
-			DYNARR_PUSH(s->stack, 0);
 			break;
 
 		case '#':
@@ -71,10 +43,11 @@ int exec_instruction(char op, state_t* s) {
 			DYNARR_PUSH(s->stack, rand() & 255);
 			break;
 
-		case '!':
+		case '!': {
 			int a = DYNARR_TOP(s->stack);
 			DYNARR_PUSH(s->stack, a);
 			break;
+		}
 
 		case '%': {
 			elem_t a = STACK_POP(s->stack);
