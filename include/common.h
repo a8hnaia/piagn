@@ -37,7 +37,7 @@ typedef struct {
 typedef struct {
 	grid_t grid;
 	enum direction dir;
-	int no_piles;
+	int has_piles;
 	int x;
 	int y;
 } func_t;
