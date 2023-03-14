@@ -16,7 +16,7 @@ void exec_function(struct elem_t_dynarr* stack, func_t func) {
 	};
 
 	// If the function doesn't push to piles, don't allocate piles for it
-	if (!func.no_piles) {
+	if (func.has_piles) {
 		state.piles = malloc(sizeof(struct elem_t_dynarr) * 256);
 		for (int i = 0; i < 256; i++) {
 			state.piles[i] = DYNARR_NEW(elem_t, 2);
@@ -34,7 +34,7 @@ void exec_function(struct elem_t_dynarr* stack, func_t func) {
 	*stack = state.stack;
 
 	// Free if we allocated piles
-	if (!func.no_piles) {
+	if (func.has_piles) {
 		for (int i = 0; i < 256; i++) {
 			DYNARR_FREE(state.piles[i]);
 		}
@@ -111,7 +111,7 @@ void step(state_t* s, grid_t grid) {
 // Error code for make_func
 int make_func_err = 0;
 // Make a function from arguments
-func_t make_func(char* str, int rows, int cols, int no_piles, int start_x, int start_y) {
+func_t make_func(char* str, int rows, int cols, int has_piles, int start_x, int start_y) {
 	// Initialise grid struct
 	grid_t grid = {
 		.ptr = malloc(sizeof(char) * rows * cols),
@@ -161,7 +161,7 @@ func_t make_func(char* str, int rows, int cols, int no_piles, int start_x, int s
 	func_t func = (func_t){
 		.grid = grid,
 		.dir = dir,
-		.no_piles = no_piles,
+		.has_piles = has_piles,
 		.x = start_x,
 		.y = start_y
 	};
@@ -182,21 +182,15 @@ int parse_file(const char const* file_name) {
 	int start_x = -1, start_y = -1;
 	// Which function currently being parsed
 	int func_id = 0;
-	/* 0: parsing main or not parsing a function
-	 * 1: start of line, might be the start of a function definition
-	 * 2: might be be about to parse function (to ignore spaces before opening brace)
-	 * 3: will parse function after newline (to ignore characters after opening brace)
-	 * 4: parsing a function
-	 */
 	enum {
-		OUTSIDE_FUNC = 0,
-		START_OF_LINE,
-		POSSIBLE_FUNCTION,
-		BEGIN_PARSING_FUNCTION,
+		OUTSIDE_FUNC = 0, // parsing main or not parsing a function
+		START_OF_LINE, //start of line, might be the start of a function definition
+		POSSIBLE_FUNCTION, // might be be about to parse function (to ignore spaces before opening brace)
+		BEGIN_PARSING_FUNCTION, // will parse function after newline (to ignore characters after opening brace)
 		PARSING_FUNCTION,
 	} status = START_OF_LINE;
 	// Whether current function ever pushes to a pile
-	int no_piles = 1;
+	int has_piles = 0;
 	// Whether the file only has a main function (without braces)
 	int only_main = 1;
 
@@ -234,7 +228,7 @@ int parse_file(const char const* file_name) {
 			cols_current = 0;
 			start_x = -1;
 			start_y = -1;
-			no_piles = 1;
+			has_piles = 0;
 			only_main = 0;
 			status = PARSING_FUNCTION;
 			continue;
@@ -243,13 +237,13 @@ int parse_file(const char const* file_name) {
 			(status == POSSIBLE_FUNCTION && only_main) ||
 			 status == PARSING_FUNCTION) {
 			if (cols_current == 0 && status == PARSING_FUNCTION && c == '}') {
-				funcs[func_id] = make_func(buffer.ptr, rows, cols, no_piles, start_x, start_y);
+				funcs[func_id] = make_func(buffer.ptr, rows, cols, has_piles, start_x, start_y);
 				if (make_func_err) return make_func_err;
 				status = OUTSIDE_FUNC;
 				continue;
 			}
 			// Enable piles if we push to a pile
-			if (c == '.') no_piles = 0;
+			if (c == '.') has_piles = 1;
 			if (c == '@') {
 				if (start_x == -1 && start_y == -1) {
 					start_x = cols_current;
@@ -270,7 +264,7 @@ int parse_file(const char const* file_name) {
 	fclose(fp);
 
 	if (only_main)
-		funcs[func_id] = make_func(buffer.ptr, rows + 1, cols, no_piles, start_x, start_y);
+		funcs[func_id] = make_func(buffer.ptr, rows + 1, cols, has_piles, start_x, start_y);
 	if (make_func_err) return make_func_err;
 
 	DYNARR_FREE(buffer);
