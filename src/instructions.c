@@ -4,13 +4,15 @@ void op_flow(state_t* s, int vt) { // generalisation of - and |
 	int dir = s->dir;
 	// rotate the `switch`ed direction if vertical
 	if (vt) dir = (dir + 1) & 3;
-	switch (dir) {
-		case LEFT: case RIGHT: break;
-		case UP: case DOWN: switch (s->surrounding) {
+
+	if(dir == UP || dir == DOWN) {
+		switch (s->surrounding) {
 			case 0: s->halt = 1; break;
+			
 			case 1: case -1:
 				s->dir = (s->dir + s->surrounding) & 3;
 			break;
+
 			case 2: {
 				elem_t a = STACK_POP(s->stack);
 				int b = (!a) * 2 - 1;
@@ -18,11 +20,13 @@ void op_flow(state_t* s, int vt) { // generalisation of - and |
 			}	break;
 		}
 	}
+
 }
 
 int exec_instruction(char op, state_t* s) {
 	switch (op) {
 		case ' ': case '\0': break;
+
 		case '0':
 			DYNARR_PUSH(s->stack, 0);
 			break;
