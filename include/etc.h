@@ -2,6 +2,8 @@
 #define PIAGN_ETC_H
 
 #include "instructions.h"
+#define BOLD_RED "\e[1;31m"
+#define RESET_COLOR "\e[0m"
 
 extern func_t funcs[64];
 
