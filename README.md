@@ -2,10 +2,12 @@
 A 2D stack-based esolang.
 
 ## Building and Usage
-Run `cate` or `./build.sh` to build. The executable is `piagn`. It takes a file to interpret as its argument.
+Run `cate` or `./build.sh` to build.
+
+The executable is `piagn`. It takes a file to interpret as its only argument.
 
 ## Language
-Piagn allows you to bind a function to a letter. Functions all share the stack (the one where operations happen) but have their own piles (each of the 256 memory stacks) and the stack gets reset between calls.
+Piagn allows you to bind a function to a letter. Functions all share the stack (the one where operations happen) but have their own piles (each of the 256 memory stacks) and the pile gets reset between calls.
 
 Functions are defined by putting a letter and the code inside braces, like this:
 ```
@@ -20,4 +22,4 @@ Descriptions of all the built-in operations can be found in [`instructions.md`](
 
 
 ## License
-This project is licensed under the MIT license. Please link to this repository in derivatives.
+This project is licensed under the MIT license. Please link to this repository in derivatives/forks.
