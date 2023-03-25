@@ -3,8 +3,8 @@
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
 		fprintf(stderr,
-		"piagn: missing file name\n"
-		"piagn <file name>"
+		"Error: " BOLD_RED "Missing file name\n" RESET_COLOR
+		"Usage: piagn <file name>"
 		);
 		return 1;
 	}
@@ -20,7 +20,10 @@ int main(int argc, char* argv[]) {
 
 		const char* text = (error == 1) ? strerror(errno)
 										: error_texts[error];
-		fprintf(stderr, "Error parsing file: %s\n", text);
+		fprintf(stderr,
+			BOLD_RED "Error parsing file: " RESET_COLOR "%s\n",
+			text
+		);
 
 		return error;
 	}

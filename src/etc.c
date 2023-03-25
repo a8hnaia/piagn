@@ -43,7 +43,7 @@ void exec_function(struct elem_t_dynarr* stack, func_t func) {
 	}
 }
 
-// Accessing grid position with bound checking
+// Accessing grid position with bounds checking
 int grid_at(grid_t grid, int x, int y) {
 	if (x > grid.cols || y > grid.rows ||
 		x < 0   || y < 0) return -1;
@@ -114,12 +114,11 @@ int make_func_err = 0;
 func_t make_func(char* str, int rows, int cols, int has_piles, int start_x, int start_y) {
 	// Initialise grid struct
 	grid_t grid = {
-		.ptr = malloc(sizeof(char) * rows * cols),
+		.ptr = calloc(1, sizeof(char) * rows * cols),
 		.rows = rows,
 		.cols = cols
 	};
 	assert(grid.ptr);
-	memset(grid.ptr, 0, sizeof(char) * rows * cols);
 
 	// Iterate through the string
 	int i = 0;
